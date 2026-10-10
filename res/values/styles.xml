@@ -1,0 +1,7 @@
+<resources>
+ <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar"><item name="android:fontFamily">sans</item><item name="android:colorAccent">#BD5630</item><item name="android:windowLightStatusBar">true</item><item name="android:navigationBarColor">#F7F5F1</item><item name="android:windowLightNavigationBar">true</item></style>
+ <style name="ShareTheme" parent="android:style/Theme.Material.Light.NoActionBar"><item name="android:windowIsTranslucent">true</item><item name="android:windowBackground">@android:color/transparent</item><item name="android:windowNoTitle">true</item></style>
+ <string name="app_name">禾语 Agent</string>
+ <string name="ime_name">禾语 Agent · AI 工作键盘</string>
+ <string name="context_description">上下文：仅在你打开禾语键盘并主动授权时读取 WhatsApp 当前屏幕可见消息，不读取历史数据库。单次交付：另外开启一键发送并点选文件后，用固定步骤操作当前聊天的原生附件、系统文件选择器和发送按钮；只检查本次文件、接收人及草稿。可停止，页面不明确就中止，不由模型自主选择接收人或发送。两项授权可分别关闭。</string>
+</resources>

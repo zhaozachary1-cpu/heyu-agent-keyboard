@@ -1,0 +1,41 @@
+package ai.heyu.agent;
+import org.json.*;import java.io.*;import java.nio.charset.*;import java.nio.file.Files;import java.security.MessageDigest;import java.util.*;import java.util.zip.*;import org.xmlpull.v1.*;
+/** Bounded, non-executing readers for explicitly selected local sources. */
+final class NativeData {
+ static String id(){return UUID.randomUUID().toString().replace("-","");}
+ static String str(JSONObject o,String k,int max)throws Exception{Object x=o.opt(k);if(!(x instanceof String)||((String)x).trim().isEmpty()||((String)x).length()>max)throw new Exception("字段不完整或过长："+k);return ((String)x).trim();}
+ static JSONObject readJson(File file)throws Exception{return new JSONObject(new String(Files.readAllBytes(file.toPath()),StandardCharsets.UTF_8));}
+ static void save(File file,JSONObject data)throws Exception{file.getParentFile().mkdirs();File tmp=new File(file.getParentFile(),file.getName()+".tmp");Files.write(tmp.toPath(),data.toString().getBytes(StandardCharsets.UTF_8));Files.move(tmp.toPath(),file.toPath(),java.nio.file.StandardCopyOption.REPLACE_EXISTING);}
+ static String hash(byte[] bytes)throws Exception{StringBuilder h=new StringBuilder();for(byte b:MessageDigest.getInstance("SHA-256").digest(bytes))h.append(String.format("%02x",b&255));return h.toString();}
+ static String decode(byte[] bytes)throws Exception{for(String name:new String[]{"UTF-8","GB18030"})try{return Charset.forName(name).newDecoder().onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT).decode(java.nio.ByteBuffer.wrap(bytes)).toString().replace("\ufeff","");}catch(CharacterCodingException ignored){}throw new Exception("请使用UTF-8或GB18030文字文件");}
+ static Map<String,byte[]> unzip(File file)throws Exception{
+  Map<String,byte[]> out=new LinkedHashMap<>();int total=0;try(ZipInputStream in=new ZipInputStream(new FileInputStream(file))){ZipEntry e;while((e=in.getNextEntry())!=null){if(e.isDirectory())continue;String n=e.getName();if(n.startsWith("/")||n.contains("..")||n.toLowerCase(Locale.ROOT).contains("vbaproject")||n.toLowerCase(Locale.ROOT).contains("externallinks")||out.containsKey(n)||out.size()>2000)throw new Exception("不支持宏、外部链接或异常压缩文档");ByteArrayOutputStream b=new ByteArrayOutputStream();byte[] buf=new byte[8192];int k;while((k=in.read(buf))!=-1){total+=k;if(total>32*1024*1024||b.size()+k>12*1024*1024)throw new Exception("文档展开后过大");b.write(buf,0,k);}out.put(n,b.toByteArray());}}
+  return out;
+ }
+ static XmlPullParser xml(byte[] data)throws Exception{if(data==null)throw new Exception("文档结构不完整");String raw=new String(data,StandardCharsets.UTF_8);if(raw.contains("<!DOCTYPE")||raw.contains("<!ENTITY"))throw new Exception("不支持文档外部实体");XmlPullParser p=android.util.Xml.newPullParser();p.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES,true);p.setInput(new StringReader(raw));return p;}
+ static String docx(File f)throws Exception{Map<String,byte[]> zip=unzip(f);XmlPullParser p=xml(zip.get("word/document.xml"));StringBuilder b=new StringBuilder();for(int e=p.getEventType();e!=XmlPullParser.END_DOCUMENT;e=p.next()){if(e==XmlPullParser.START_TAG&&"t".equals(p.getName()))b.append(p.nextText());else if(e==XmlPullParser.END_TAG&&"p".equals(p.getName()))b.append('\n');if(b.length()>24000)throw new Exception("文字材料最多24000字");}return b.toString().trim();}
+ static JSONArray csv(String text)throws Exception{
+  if(text.length()>500000)throw new Exception("CSV过大");JSONArray rows=new JSONArray();List<String> row=new ArrayList<>();StringBuilder cell=new StringBuilder();boolean quote=false;
+  for(int i=0;i<text.length();i++){char ch=text.charAt(i);if(ch=='"'){if(quote&&i+1<text.length()&&text.charAt(i+1)=='"'){cell.append('"');i++;}else if(quote||cell.length()==0)quote=!quote;else throw new Exception("CSV引号格式错误");}else if(ch==','&&!quote){row.add(cell.toString());cell.setLength(0);}else if((ch=='\n'||ch=='\r')&&!quote){if(ch=='\r'&&i+1<text.length()&&text.charAt(i+1)=='\n')i++;row.add(cell.toString());cell.setLength(0);rows.put(new JSONArray(row));row.clear();}else cell.append(ch);if(cell.length()>1000||row.size()>30||rows.length()>1001)throw new Exception("表格超出1000行/30列限制");}
+  if(quote)throw new Exception("CSV引号未闭合");if(cell.length()>0||!row.isEmpty()){row.add(cell.toString());rows.put(new JSONArray(row));}return rows;
+ }
+ static JSONObject table(JSONArray rows,String name)throws Exception{
+  if(rows.length()<2||rows.length()>1001)throw new Exception("表格需包含标题与1–1000行数据");JSONArray h=rows.getJSONArray(0);if(h.length()<1||h.length()>30)throw new Exception("表格最多30列");Set<String> seen=new HashSet<>();for(int i=0;i<h.length();i++){String x=h.optString(i).trim();if(x.isEmpty()||x.length()>80||!seen.add(x))throw new Exception("首行必须是不重复的列名");h.put(i,x);}
+  JSONArray data=new JSONArray();for(int i=1;i<rows.length();i++){JSONArray r=rows.getJSONArray(i);if(r.length()!=h.length())throw new Exception("表格行列不齐");data.put(r);}
+  return AgentApi.obj("sheet",name,"headers",h,"rows",data);
+ }
+ static JSONArray xlsx(File f)throws Exception{
+  Map<String,byte[]> zip=unzip(f);List<String> shared=new ArrayList<>();if(zip.containsKey("xl/sharedStrings.xml")){XmlPullParser p=xml(zip.get("xl/sharedStrings.xml"));StringBuilder b=null;for(int e=p.getEventType();e!=XmlPullParser.END_DOCUMENT;e=p.next()){if(e==XmlPullParser.START_TAG&&"si".equals(p.getName()))b=new StringBuilder();else if(e==XmlPullParser.START_TAG&&"t".equals(p.getName())&&b!=null)b.append(p.nextText());else if(e==XmlPullParser.END_TAG&&"si".equals(p.getName())){shared.add(b.toString());b=null;}}}
+  Map<String,String> rel=new HashMap<>();XmlPullParser p=xml(zip.get("xl/_rels/workbook.xml.rels"));for(int e=p.getEventType();e!=XmlPullParser.END_DOCUMENT;e=p.next())if(e==XmlPullParser.START_TAG&&"Relationship".equals(p.getName())){String target=p.getAttributeValue(null,"Target");if("External".equals(p.getAttributeValue(null,"TargetMode")))throw new Exception("不支持外部表格链接");rel.put(p.getAttributeValue(null,"Id"),target);}
+  List<String[]> sheets=new ArrayList<>();p=xml(zip.get("xl/workbook.xml"));for(int e=p.getEventType();e!=XmlPullParser.END_DOCUMENT;e=p.next())if(e==XmlPullParser.START_TAG&&"sheet".equals(p.getName())){String rid=p.getAttributeValue("http://schemas.openxmlformats.org/officeDocument/2006/relationships","id"),target=rel.get(rid);if(target==null)throw new Exception("表格页关系缺失");if(target.startsWith("/"))target=target.substring(1);else target="xl/"+target;sheets.add(new String[]{p.getAttributeValue(null,"name"),target});}
+  if(sheets.size()>8)throw new Exception("最多8个工作表");JSONArray all=new JSONArray();
+  for(String[] sh:sheets){p=xml(zip.get(sh[1]));JSONArray rows=new JSONArray();JSONArray row=null;String cellType="",ref="";Object value="";
+   for(int e=p.getEventType();e!=XmlPullParser.END_DOCUMENT;e=p.next()){
+    if(e==XmlPullParser.START_TAG){String tag=p.getName();if("row".equals(tag)){row=new JSONArray();}else if("c".equals(tag)){cellType=p.getAttributeValue(null,"t");ref=p.getAttributeValue(null,"r");value="";}else if("f".equals(tag))throw new Exception("含公式的输入表格请先另存为纯值，避免使用旧缓存");else if("v".equals(tag)||"t".equals(tag)){String t=p.nextText();if("s".equals(cellType)){int index=Integer.parseInt(t);if(index<0||index>=shared.size())throw new Exception("共享文字索引异常");value=shared.get(index);}else if("e".equals(cellType))throw new Exception("表格含错误值");else if(cellType==null||"n".equals(cellType)){try{java.math.BigDecimal n=new java.math.BigDecimal(t);value=n;}catch(Exception ex){value=t;}}else value=t;}}
+    else if(e==XmlPullParser.END_TAG&&"c".equals(p.getName())&&row!=null){int col=0;if(ref==null)throw new Exception("表格坐标缺失");for(char ch:ref.toCharArray()){if(ch<'A'||ch>'Z')break;col=col*26+ch-'A'+1;}if(col<1||col>30)throw new Exception("最多30列");while(row.length()<col-1)row.put("");row.put(value);}
+    else if(e==XmlPullParser.END_TAG&&"row".equals(p.getName())&&row!=null){if(row.length()>0)rows.put(row);if(rows.length()>1001)throw new Exception("最多1000行数据");row=null;}
+   }
+   if(rows.length()>0){int n=rows.getJSONArray(0).length();for(int i=1;i<rows.length();i++)while(rows.getJSONArray(i).length()<n)rows.getJSONArray(i).put("");all.put(table(rows,sh[0]));}
+  }if(all.length()==0)throw new Exception("表格没有数据");return all;
+ }
+}

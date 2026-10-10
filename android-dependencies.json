@@ -1,0 +1,22 @@
+[
+  {
+    "name": "pdfbox-android-2.0.27.0.aar",
+    "url": "https://repo.maven.apache.org/maven2/com/tom-roush/pdfbox-android/2.0.27.0/pdfbox-android-2.0.27.0.aar",
+    "sha256": "30277f879cfd571db2a137582c95516a0d4ea6778e945519bc58ca93d57d88c7"
+  },
+  {
+    "name": "bcprov-jdk15to18-1.72.jar",
+    "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk15to18/1.72/bcprov-jdk15to18-1.72.jar",
+    "sha256": "ea66ea8a450810b2193e8bf9a7ad3e46307c9896224c0f407d1b7d96ba1221cc"
+  },
+  {
+    "name": "bcpkix-jdk15to18-1.72.jar",
+    "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcpkix-jdk15to18/1.72/bcpkix-jdk15to18-1.72.jar",
+    "sha256": "d9b97477b72499bcee02f5a906510810257ff36a94bf69fbca0b1e65e7ffdb6e"
+  },
+  {
+    "name": "bcutil-jdk15to18-1.72.jar",
+    "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcutil-jdk15to18/1.72/bcutil-jdk15to18-1.72.jar",
+    "sha256": "d92184bdeb3105a11ad9e36acbd66b5f8eed091b08b9c8f3e2549e42b7f131f1"
+  }
+]

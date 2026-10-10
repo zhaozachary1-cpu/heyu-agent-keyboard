@@ -1,0 +1,21 @@
+Heyu Agent Keyboard
+Copyright 2026 Heyu contributors
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+AOSP PinyinIME source and dictionary
+https://android.googlesource.com/platform/packages/inputmethods/PinyinIME/
+Pinned commit and local modifications: third_party/pinyin/UPSTREAM.md
+License: Apache-2.0. Original source notices retained.
+
+PdfBox-Android 2.0.27.0 by Tom Roush and contributors
+https://github.com/TomRoush/PdfBox-Android
+Android port of Apache PDFBox. License: Apache-2.0.
+Artifacts are fetched from Maven Central with SHA-256 verification.
+
+Bouncy Castle 1.72 (bcprov-jdk15to18, bcpkix-jdk15to18, bcutil-jdk15to18)
+https://www.bouncycastle.org/
+License: Bouncy Castle / MIT-style license. Used by the PDFBox dependency.
+Full dependency license notices are included in assets/open-source-licenses.txt.
+
+WhatsApp, DeepSeek and Android are names of their respective owners.
+This project is not an official product of, or endorsed by, those providers.

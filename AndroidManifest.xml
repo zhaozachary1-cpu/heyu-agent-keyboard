@@ -1,0 +1,17 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="ai.heyu.agent" android:versionCode="16" android:versionName="1.0.0-standalone">
+ <uses-sdk android:minSdkVersion="30" android:targetSdkVersion="36"/>
+ <uses-permission android:name="android.permission.INTERNET"/>
+ <uses-permission android:name="android.permission.READ_CALENDAR"/><uses-permission android:name="android.permission.WRITE_CALENDAR"/>
+ <queries><package android:name="com.whatsapp"/></queries>
+ <application android:label="@string/app_name" android:icon="@drawable/icon" android:theme="@style/AppTheme" android:allowBackup="false" android:networkSecurityConfig="@xml/network_security" android:supportsRtl="true">
+  <activity android:name=".SetupActivity" android:exported="true" android:windowSoftInputMode="adjustResize"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
+  <activity android:name=".ApiSettingsActivity" android:exported="false" android:windowSoftInputMode="adjustResize"/>
+  <activity android:name=".DeliveryActivity" android:exported="false" android:theme="@style/ShareTheme"/>
+  <activity android:name=".SourcePickerActivity" android:taskAffinity="" android:excludeFromRecents="true" android:exported="false" android:theme="@style/ShareTheme"/>
+  <activity android:name=".CalendarActivity" android:exported="false" android:theme="@style/ShareTheme"/>
+  <provider android:name=".ArtifactProvider" android:authorities="ai.heyu.agent.artifacts" android:exported="false" android:grantUriPermissions="true"/>
+  <provider android:name=".DeliveryDocumentsProvider" android:authorities="ai.heyu.agent.delivery" android:exported="true" android:grantUriPermissions="true" android:permission="android.permission.MANAGE_DOCUMENTS"><intent-filter><action android:name="android.content.action.DOCUMENTS_PROVIDER"/></intent-filter></provider>
+  <service android:name=".AgentIme" android:label="@string/ime_name" android:permission="android.permission.BIND_INPUT_METHOD" android:exported="true"><intent-filter><action android:name="android.view.InputMethod"/></intent-filter><meta-data android:name="android.view.im" android:resource="@xml/input_method"/></service>
+  <service android:name=".ChatContextService" android:label="禾语 · WhatsApp 上下文与单次交付辅助" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" android:exported="true"><intent-filter><action android:name="android.accessibilityservice.AccessibilityService"/></intent-filter><meta-data android:name="android.accessibilityservice" android:resource="@xml/context_service"/></service>
+ </application>
+</manifest>
