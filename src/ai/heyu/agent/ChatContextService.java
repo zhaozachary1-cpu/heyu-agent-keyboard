@@ -50,7 +50,7 @@ public final class ChatContextService extends AccessibilityService {
   if(root==null||root.getPackageName()==null||!"com.whatsapp".contentEquals(root.getPackageName()))return null;
   List<AccessibilityNodeInfo> titles=root.findAccessibilityNodeInfosByViewId("com.whatsapp:id/conversation_contact_name"),entries=root.findAccessibilityNodeInfosByViewId("com.whatsapp:id/entry");
   if(titles.size()!=1||entries.size()!=1||!titles.get(0).isVisibleToUser()||!entries.get(0).isVisibleToUser()||entries.get(0).isPassword()||!entries.get(0).isEditable())return null;
-  CharSequence value=titles.get(0).getText();if(value==null||value.toString().isBlank())return null;
+  CharSequence value=titles.get(0).getText();if(value==null||value.toString().codePoints().allMatch(Character::isWhitespace))return null;
   String status="";for(AccessibilityNodeInfo n:root.findAccessibilityNodeInfosByViewId("com.whatsapp:id/conversation_contact_status"))if(n.isVisibleToUser()&&n.getText()!=null)status=n.getText().toString();
   // Read-only context and file sending have deliberately separate compatibility scopes.
   String version="";try{version=instance.getPackageManager().getPackageInfo("com.whatsapp",0).versionName;}catch(Exception ignored){}

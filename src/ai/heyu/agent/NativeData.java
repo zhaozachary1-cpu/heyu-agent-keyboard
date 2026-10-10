@@ -2,6 +2,7 @@ package ai.heyu.agent;
 import org.json.*;import java.io.*;import java.nio.charset.*;import java.nio.file.Files;import java.security.MessageDigest;import java.util.*;import java.util.zip.*;import org.xmlpull.v1.*;
 /** Bounded, non-executing readers for explicitly selected local sources. */
 final class NativeData {
+ static byte[] readStream(InputStream in,int maximum)throws IOException{ByteArrayOutputStream out=new ByteArrayOutputStream();byte[] buffer=new byte[8192];int n;while((n=in.read(buffer))!=-1){if(out.size()+n>maximum)throw new IOException("文件读取超过大小限制");out.write(buffer,0,n);}return out.toByteArray();}
  static String id(){return UUID.randomUUID().toString().replace("-","");}
  static String str(JSONObject o,String k,int max)throws Exception{Object x=o.opt(k);if(!(x instanceof String)||((String)x).trim().isEmpty()||((String)x).length()>max)throw new Exception("字段不完整或过长："+k);return ((String)x).trim();}
  static JSONObject readJson(File file)throws Exception{return new JSONObject(new String(Files.readAllBytes(file.toPath()),StandardCharsets.UTF_8));}

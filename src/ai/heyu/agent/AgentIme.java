@@ -201,7 +201,7 @@ public final class AgentIme extends InputMethodService {
   if("com.whatsapp".equals(host())&&!ChatMemory.bound()){toast("当前聊天尚未确认，请稍后重试");return;}
   InputConnection ic=getCurrentInputConnection();DraftEditor.Snapshot source=DraftEditor.read(ic,DraftEditor.MAX_INPUT);
   if(source==null){toast("暂不能安全读取完整草稿；仅支持 4,000 字以内的纯文字");return;}
-  if(source.text.isBlank()){toast("先在聊天输入框写点内容，再点 AI 润色");return;}
+  if(source.text.codePoints().allMatch(Character::isWhitespace)){toast("先在聊天输入框写点内容，再点 AI 润色");return;}
   clearPolish("");stopAutomatic();polishConnection=ic;polishOriginal=source;polishSession=session;polishGeneration=ChatMemory.generation();
   polishStyleLabel=PolishStyle.label(this);polishBusy=true;polishNotice="正在按「"+polishStyleLabel+"」润色…";final int ticket=++polishTicket;updatePolishUi();
   polishRequest=AgentApi.callCancelable(this,"/polish",AgentApi.obj("text",source.text,"style",PolishStyle.id(this)),(data,error)->{
@@ -210,7 +210,7 @@ public final class AgentIme extends InputMethodService {
    if(!source.sameState(DraftEditor.read(ic,DraftEditor.MAX_OUTPUT))){clearPolish("草稿已变化，未替换");return;}
    if(error!=null){clearPolish("润色失败，原文未改");toast(error);return;}
    Object raw=data==null?null:data.opt("text");String value=raw instanceof String?(String)raw:null;
-   if(!DraftEditor.validText(value,DraftEditor.MAX_OUTPUT)||value.isBlank()){clearPolish("结果无效，原文未改");return;}
+   if(!DraftEditor.validText(value,DraftEditor.MAX_OUTPUT)||value.codePoints().allMatch(Character::isWhitespace)){clearPolish("结果无效，原文未改");return;}
    if(value.equals(source.text)){clearPolish("表达已经自然，无需替换");return;}
    polishApplying=true;DraftEditor.Result result;
    try{result=DraftEditor.replace(ic,source,value,()->ticket==polishTicket&&polishOwnerMatches());}finally{polishApplying=false;}
@@ -323,14 +323,14 @@ public final class AgentIme extends InputMethodService {
    if(!ChatContextService.automaticConsent(this)){renderAutoPrivacy();return;}
    body.addView(Ui.text(this,"建议自动跟上当前对话",19,Ui.INK,true));
    label("返回键盘后建议仍在键盘上方。无需手动读取；点选才填入，不发送。");
-   if(automatic.phase==AutoReplyState.Phase.READY){LinearLayout card=Ui.card(this);card.addView(Ui.text(this,automatic.reply,16,Ui.INK,false));body.addView(card);if(!automatic.note.isBlank())label(automatic.note);Ui.addButton(body,"填入聊天输入框 · 不发送",true,this::insertAutomaticReply);}
+   if(automatic.phase==AutoReplyState.Phase.READY){LinearLayout card=Ui.card(this);card.addView(Ui.text(this,automatic.reply,16,Ui.INK,false));body.addView(card);if(!automatic.note.codePoints().allMatch(Character::isWhitespace))label(automatic.note);Ui.addButton(body,"填入聊天输入框 · 不发送",true,this::insertAutomaticReply);}
    else label(automaticLabel());
    Ui.addButton(body,"语气："+tone,false,()->{tone=tone.equals("简洁专业")?"友好自然":tone.equals("友好自然")?"礼貌英文":"简洁专业";ChatMemory.current().tone=tone;ChatMemory.save(ChatMemory.current());tickAutomatic();render();});
    Ui.addButton(body,"粘贴其他上下文…",false,()->{stopAutomatic();useContext(clipboard(),"手动粘贴");});return;
   }
   if("com.whatsapp".equals(host()))Ui.addButton(body,"返回自动建议",false,()->{context="";contextTitle="";tickAutomatic();render();});
   body.addView(Ui.text(this,"接住对话，帮你组织语言",19,Ui.INK,true));Ui.space(body,5);
-  label("只读当前屏幕可见消息；先预览，再交给模型。");if(!ChatMemory.current().memory.isBlank())label("本聊天偏好也将提交："+ChatMemory.current().memory);Ui.addButton(body,"粘贴上下文",false,()->useContext(clipboard(),"手动粘贴"));
+  label("只读当前屏幕可见消息；先预览，再交给模型。");if(!ChatMemory.current().memory.codePoints().allMatch(Character::isWhitespace))label("本聊天偏好也将提交："+ChatMemory.current().memory);Ui.addButton(body,"粘贴上下文",false,()->useContext(clipboard(),"手动粘贴"));
   if(context.isEmpty()){if(!ChatMemory.current().lastReply.isEmpty()){label("上次生成的回复 · "+when(ChatMemory.current().replyAt)+"（回看用；重新读取生成后才能填入）");body.addView(Ui.text(this,ChatMemory.current().lastReply,14,Ui.INK,false));}LinearLayout card=Ui.card(this);card.addView(Ui.text(this,"尚未读取聊天",16,Ui.INK,true));card.addView(Ui.text(this,"不会扫描全部历史或联系人。也可以把一段对话复制后，点「粘贴上下文」。",13,Ui.MUTED,false));body.addView(card);return;}
   LinearLayout card=Ui.card(this);card.addView(Ui.text(this,"上下文 · "+contextTitle,12,Ui.MUTED,true));TextView txt=Ui.text(this,context,13,Ui.INK,false);if(!expandedContext)txt.setMaxLines(3);card.addView(txt);body.addView(card);Ui.addButton(body,expandedContext?"收起上下文":"查看将提交的完整上下文（"+context.length()+" 字）",false,()->{expandedContext=!expandedContext;render();});
   smallRow("语气："+tone,()->{tone=tone.equals("简洁专业")?"友好自然":tone.equals("友好自然")?"礼貌英文":"简洁专业";ChatMemory.current().tone=tone;ChatMemory.save(ChatMemory.current());render();},"清除上下文",()->{ChatMemory.current().replyEpoch++;context="";reply="";autoReply=false;replyTicket++;ChatContextService.clear();render();});
@@ -347,7 +347,7 @@ public final class AgentIme extends InputMethodService {
   final ConversationState owner=ChatMemory.current();final int generation=ChatMemory.generation();
   final int current=session,ticket=++replyTicket,ownerTicket=++owner.replyEpoch;final String expectedTitle=contextTitle,expectedText=context;
   replyBusy=true;reply="";replyError="";render();
-  AgentApi.call(this,"POST","/reply",AgentApi.obj("context",owner.memory.isBlank()?context:"用户确认的风格偏好（不是聊天事实）：\n"+owner.memory+"\n\n当前可见聊天：\n"+context,"tone",tone),(d,e)->{
+  AgentApi.call(this,"POST","/reply",AgentApi.obj("context",owner.memory.codePoints().allMatch(Character::isWhitespace)?context:"用户确认的风格偏好（不是聊天事实）：\n"+owner.memory+"\n\n当前可见聊天：\n"+context,"tone",tone),(d,e)->{
    if(!sameWorkspace(owner,generation)||current!=session||ticket!=replyTicket)return;replyBusy=false;
    if(!expectedTitle.equals("手动粘贴")&&"com.whatsapp".equals(host())){ChatContextService.Snapshot now=ChatContextService.capture();if(now==null||!now.title.equals(expectedTitle)||!now.text.equals(expectedText)){replyError="聊天或可见消息已变化，已丢弃旧建议；请重新读取";reply="";render();return;}}
    if(e==null)TaskState.publishReply(owner,ownerTicket,d.optString("reply"));
@@ -397,7 +397,7 @@ public final class AgentIme extends InputMethodService {
    final ConversationState owner=ChatMemory.current();final int generation=ChatMemory.generation();
    final int ticket=automatic.start(monotonic()),ownerTicket=++owner.replyEpoch;final String expected=key;
    // No history, host draft, attachment or background message is part of this request.
-   String input=owner.memory.isBlank()?snapshot.text:"用户填写的风格偏好（不是聊天事实）：\n"+owner.memory+"\n\n当前可见聊天：\n"+snapshot.text;
+   String input=owner.memory.codePoints().allMatch(Character::isWhitespace)?snapshot.text:"用户填写的风格偏好（不是聊天事实）：\n"+owner.memory+"\n\n当前可见聊天：\n"+snapshot.text;
    automaticRequest=AgentApi.callCancelable(this,"/reply",AgentApi.obj("context",input,"tone",tone,"automatic",true),(data,error)->{
     if(!sameWorkspace(owner,generation)||!automaticEligible(ChatContextService.header())||ticket!=automatic.ticket)return;
     ChatContextService.Snapshot now=ChatContextService.capture();
@@ -524,7 +524,7 @@ public final class AgentIme extends InputMethodService {
  private void generateRecognizedTask(){
   if(!intentStillCurrent())return;
   if(WorkState.hasDraft()){toast("已有任务草稿，先继续或明确清空草稿；不会被聊天识别覆盖。");return;}
-  String prompt=taskIntent.optString("prompt");if(prompt.isBlank()||prompt.length()>10000)return;
+  String prompt=taskIntent.optString("prompt");if(prompt.codePoints().allMatch(Character::isWhitespace)||prompt.length()>10000)return;
   TaskState.current().task=prompt;WorkState.select(taskIntent.optString("kind","auto"));intentSession.disable();manualTask=true;preview=false;confirmDelivery=false;render();
  }
  private void renderTaskDiscovery(){
@@ -581,7 +581,7 @@ public final class AgentIme extends InputMethodService {
 
  private void renderWork(){
   final ConversationState draftOwner=ChatMemory.current();
-  body.addView(Ui.text(this,"把这件事交给禾语",21,Ui.INK,true));label("描述需求 → 核对计划 → 预览交付");if(!ChatMemory.current().memory.isBlank())label("本聊天偏好也将提交："+ChatMemory.current().memory);
+  body.addView(Ui.text(this,"把这件事交给禾语",21,Ui.INK,true));label("描述需求 → 核对计划 → 预览交付");if(!ChatMemory.current().memory.codePoints().allMatch(Character::isWhitespace))label("本聊天偏好也将提交："+ChatMemory.current().memory);
   if(WorkState.current().workBusy){label(WorkState.current().workStatus);ProgressBar bar=new ProgressBar(this);body.addView(bar);label("材料和目标已在本机保留。只向模型提交确认的任务文字，不自动发送文件。");return;}
   smallRow("目标："+WorkState.kindName(WorkState.current().kind),()->{WorkState.current().choosing=true;render();},"返回聊天识别",()->{WorkState.current().open=false;manualTask=false;intentSession.reset();scheduleTaskScan();render();});
   editableCard("任务目标",draftOwner.task,"点此输入目标、受众、语言…",()->openLocalEditor(draftOwner,ChatMemory.generation(),"任务目标",draftOwner.task,10000,value->{draftOwner.task=value;WorkState.invalidate(draftOwner);return true;}));

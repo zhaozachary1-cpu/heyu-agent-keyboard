@@ -20,6 +20,12 @@ class ReleaseContractTests(unittest.TestCase):
   allcode='\n'.join(p.read_text() for p in (ROOT/'src').rglob('*.java'))
   for bad in ['Runtime.getRuntime().exec(', 'DexClassLoader(', 'evaluateJavascript(', 'setHostnameVerifier(', 'X509TrustManager']:
    self.assertNotIn(bad,allcode)
+ def test_android11_compatible_java_calls(self):
+  code='\n'.join(p.read_text() for p in (ROOT/'src').rglob('*.java'))
+  self.assertNotIn('.isBlank()',code)
+  self.assertNotIn('in.readAllBytes()',code)
+  self.assertNotIn('Files.readString(',code)
+  self.assertNotIn('Files.writeString(',code)
  def test_dependencies_are_checksum_pinned(self):
   for item in json.loads((ROOT/'android-dependencies.json').read_text()):
    self.assertTrue(item['url'].startswith('https://repo.maven.apache.org/'));self.assertRegex(item['sha256'],r'^[0-9a-f]{64}$')

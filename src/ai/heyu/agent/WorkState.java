@@ -22,7 +22,7 @@ final class WorkState {
   else if(source!=null){s.sources.add(source);invalidate(s);}
   TaskState.notifyChange(s);return true;
  }
- static boolean hasDraft(){return !current().task.isBlank()||!current().sources.isEmpty();}
+ static boolean hasDraft(){return !current().task.codePoints().allMatch(Character::isWhitespace)||!current().sources.isEmpty();}
  static void select(String k){ConversationState s=current();s.kind=k;s.open=true;s.choosing=false;invalidate();changed();}
  static void reset(Context c){ConversationState s=current();if(s.workBusy)return;s.workEpoch++;for(Source src:new ArrayList<>(s.sources))remove(c,src);s.sources.clear();s.kind="auto";s.plan=null;s.open=false;s.choosing=false;s.task="";s.workError="";s.workStatus="";changed();}
  static void remove(Context c,Source source){ConversationState s=current();if(s.workBusy)return;s.sources.remove(source);source.file.delete();if(!source.id.isEmpty())AgentApi.call(c,"POST","/sources/"+source.id+"/remove",AgentApi.obj(),(d,e)->{});invalidate();changed();}
@@ -30,7 +30,7 @@ final class WorkState {
  static void prepare(Context context){
   final ConversationState s=current();if(s.workBusy||s.busy||!ChatMemory.bound())return;
   final String task=ChatMemory.modelTask(s),selected=s.kind;
-  if(s.task.isBlank()||task.length()>10000){s.workError="请描述具体要求；目标与聊天偏好合计最多10000字。";changed();return;}
+  if(s.task.codePoints().allMatch(Character::isWhitespace)||task.length()>10000){s.workError="请描述具体要求；目标与聊天偏好合计最多10000字。";changed();return;}
   final Context app=context.getApplicationContext();final int ticket=++s.workEpoch;final ArrayList<Source> inputs=new ArrayList<>(s.sources);
   s.workBusy=true;s.workError="";s.plan=null;s.workStatus="手机正在解析材料并整理计划…";changed();
   AgentApi.IO.execute(()->{

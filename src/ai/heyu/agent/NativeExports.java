@@ -13,13 +13,13 @@ final class NativeExports {
  static String type(String part,String mime){return "<Override PartName=\"/"+part+"\" ContentType=\""+mime+"\"/>";}
  static File file(Context c,String ext){File d=new File(c.getFilesDir(),"exports");d.mkdirs();return new File(d,NativeData.id()+"."+ext);}
  static JSONObject artifact(Context c,File f,String title)throws Exception{
-  byte[] bytes=Files.readAllBytes(f.toPath());if(bytes.length==0||bytes.length>12*1024*1024)throw new Exception("生成文件为空或超过12MB");String ext=f.getName().substring(33);String name=title.replaceAll("[^\\p{L}\\p{N} _-]","");if(name.length()>64)name=name.substring(0,64);if(name.isBlank())name="禾语生成材料";String id=f.getName().substring(0,32);
+  byte[] bytes=Files.readAllBytes(f.toPath());if(bytes.length==0||bytes.length>12*1024*1024)throw new Exception("生成文件为空或超过12MB");String ext=f.getName().substring(33);String name=title.replaceAll("[^\\p{L}\\p{N} _-]","");if(name.length()>64)name=name.substring(0,64);if(name.codePoints().allMatch(Character::isWhitespace))name="禾语生成材料";String id=f.getName().substring(0,32);
   JSONObject a=AgentApi.obj("fileId",id,"fileName",name+"."+ext,"storedName",f.getName(),"ext",ext,"mime",ArtifactProvider.mime(ext),"bytes",bytes.length,"sha256",NativeData.hash(bytes));NativeData.save(new File(f.getParentFile(),id+".meta"),a);Files.write(new File(f.getParentFile(),id+".name").toPath(),(name+"."+ext).getBytes(StandardCharsets.UTF_8));return a;
  }
  static final class Paragraph {final String text;final int level;Paragraph(String s,int l){text=s;level=l;}}
  static List<Paragraph> paragraphs(String title,String intro,JSONArray sections,JSONArray warnings)throws Exception{
   List<Paragraph> list=new ArrayList<>();list.add(new Paragraph(title,0));list.add(new Paragraph(intro,2));
-  for(int i=0;i<sections.length();i++){JSONObject sec=sections.getJSONObject(i);list.add(new Paragraph(NativeData.str(sec,"heading",100),1));JSONArray ps=sec.getJSONArray("paragraphs");if(ps.length()<1||ps.length()>80)throw new Exception("章节正文格式不完整");for(int n=0;n<ps.length();n++){String text=ps.getString(n);if(text.isBlank()||text.length()>800)throw new Exception("段落长度异常");list.add(new Paragraph(text,2));}}
+  for(int i=0;i<sections.length();i++){JSONObject sec=sections.getJSONObject(i);list.add(new Paragraph(NativeData.str(sec,"heading",100),1));JSONArray ps=sec.getJSONArray("paragraphs");if(ps.length()<1||ps.length()>80)throw new Exception("章节正文格式不完整");for(int n=0;n<ps.length();n++){String text=ps.getString(n);if(text.codePoints().allMatch(Character::isWhitespace)||text.length()>800)throw new Exception("段落长度异常");list.add(new Paragraph(text,2));}}
   if(warnings.length()>0){list.add(new Paragraph("核对事项",1));for(int i=0;i<warnings.length();i++)list.add(new Paragraph(warnings.getString(i),2));}return list;
  }
  static JSONArray document(Context c,String title,String intro,JSONArray sections,JSONArray warnings)throws Exception{

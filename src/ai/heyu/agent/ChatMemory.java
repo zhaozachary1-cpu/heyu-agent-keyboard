@@ -47,7 +47,7 @@ final class ChatMemory {
  static void suspend(){save(active);}
  static boolean observe(String title,String proof,int nextWindow){return observe(title,proof,nextWindow,0);}
  static boolean observe(String title,String proof,int nextWindow,long nextEpoch){
-  if(title==null||title.isBlank()){if(visible.isEmpty())return false;detach();return true;}
+  if(title==null||title.codePoints().allMatch(Character::isWhitespace)){if(visible.isEmpty())return false;detach();return true;}
   if(ConversationPolicy.sameVisible(visible,window,title,nextWindow)&&visibleProof.equals(proof)&&surfaceEpoch==nextEpoch&&bound())return false;
   detach();visible=title;visibleProof=proof;window=nextWindow;surfaceEpoch=nextEpoch;
   if(!proof.isEmpty())for(ConversationState s:all.values())if(!s.id.equals("legacy")&&ConversationPolicy.mayRestore(proof,s.proof)){active=s;s.title=title;save(s);return true;}
@@ -61,7 +61,7 @@ final class ChatMemory {
   window=returnedWindow;surfaceEpoch=epoch;return true;
  }
  static ArrayList<ConversationState> candidates(){ArrayList<ConversationState> list=new ArrayList<>();for(ConversationState s:all.values())if(!s.id.equals("legacy")&&s.title.equals(visible))list.add(s);return list;}
- static void create(){if(visible.isBlank())return;ConversationState s=new ConversationState(UUID.randomUUID().toString());s.title=visible;s.label=visible+(candidates().isEmpty()?"":" · 独立记忆 "+(candidates().size()+1));s.proof=visibleProof;all.put(s.id,s);active=s;generation++;save(s);}
+ static void create(){if(visible.codePoints().allMatch(Character::isWhitespace))return;ConversationState s=new ConversationState(UUID.randomUUID().toString());s.title=visible;s.label=visible+(candidates().isEmpty()?"":" · 独立记忆 "+(candidates().size()+1));s.proof=visibleProof;all.put(s.id,s);active=s;generation++;save(s);}
  static boolean bind(String id){ConversationState s=all.get(id);if(s==null||!s.title.equals(visible)||s.id.equals("legacy"))return false;save(active);active=s;generation++;return true;}
  static ConversationState find(String id){return all.get(id);}
  static ConversationState legacy(){return all.get("legacy");}
@@ -85,5 +85,5 @@ final class ChatMemory {
   File dir=new File(app.getFilesDir(),"exports");File[] files=dir.listFiles((d,n)->n.matches("[0-9a-f]{32}\\.(pptx|docx|pdf|xlsx|png|jpg|ics)"));if(files==null)return;
   for(File f:files){String id=f.getName().split("\\.")[0];boolean used=false;for(ConversationState s:all.values()){if(contains(s.result,id)){used=true;break;}for(JSONObject h:s.history)if(contains(h.optJSONObject("result"),id)){used=true;break;}if(used)break;}if(!used)HistoryFiles.remove(app,f);}
  }
- static String modelTask(ConversationState s){return s.memory.isBlank()?s.task:"用户确认的本聊天偏好（仅作风格参考，不是聊天事实）：\n"+s.memory+"\n\n本次任务：\n"+s.task;}
+ static String modelTask(ConversationState s){return s.memory.codePoints().allMatch(Character::isWhitespace)?s.task:"用户确认的本聊天偏好（仅作风格参考，不是聊天事实）：\n"+s.memory+"\n\n本次任务：\n"+s.task;}
 }

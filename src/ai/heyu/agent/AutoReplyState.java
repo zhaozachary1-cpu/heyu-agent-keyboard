@@ -38,7 +38,7 @@ final class AutoReplyState {
  int start(long now){if(!canStart(now))return -1;requests.addLast(now);phase=Phase.LOADING;error="";return ++ticket;}
  boolean complete(int expected,String expectedKey,String text,String detail,String failure,long now){
   if(ticket!=expected||!key.equals(expectedKey)||phase!=Phase.LOADING)return false;
-  if(failure!=null||text==null||text.isBlank()){phase=Phase.ERROR;error=failure==null?"模型没有返回可用建议":failure;retryAt=now+RETRY_MS;return true;}
+  if(failure!=null||text==null||text.codePoints().allMatch(Character::isWhitespace)){phase=Phase.ERROR;error=failure==null?"模型没有返回可用建议":failure;retryAt=now+RETRY_MS;return true;}
   reply=text;note=detail==null?"":detail;phase=Phase.READY;readyAt=now;
   cache.put(key,new Cached(reply,note,now));while(cache.size()>16)cache.remove(cache.keySet().iterator().next());return true;
  }

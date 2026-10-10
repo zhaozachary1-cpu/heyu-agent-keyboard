@@ -44,7 +44,7 @@ final class DraftEditor {
   try{if(guard.valid()&&old.sameText(read(ic,MAX_OUTPUT)))ic.setSelection(old.start,old.end);}catch(RuntimeException ignored){}
  }
  static Result replace(InputConnection ic,Snapshot expected,String value,Guard guard){
-  if(expected==null||!validText(value,MAX_OUTPUT)||value.isBlank())return Result.FAILED;
+  if(expected==null||!validText(value,MAX_OUTPUT)||value.codePoints().allMatch(Character::isWhitespace))return Result.FAILED;
   if(!guard.valid()||!expected.sameState(read(ic,MAX_OUTPUT)))return Result.STALE;
   boolean began=false,submitted=false;
   try{
